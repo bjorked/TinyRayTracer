@@ -5,11 +5,11 @@
 
 struct Material
 {
-    Material() : albedo(1,0), diffuse_color(), specular_exponent() {}
-    Material(const Vec2f& alb, const Vec3f& color, float exp)
+    Material() : albedo(1,0,0), diffuse_color(), specular_exponent() {}
+    Material(const Vec3f& alb, const Vec3f& color, float exp)
         : albedo(alb), diffuse_color(color), specular_exponent(exp) {}
 
-    Vec2f albedo;
+    Vec3f albedo;
     Vec3f diffuse_color;
     float specular_exponent;
 };
