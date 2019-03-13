@@ -5,11 +5,12 @@
 
 struct Material
 {
-    Material() : albedo(1,0,0), diffuse_color(), specular_exponent() {}
-    Material(const Vec3f& alb, const Vec3f& color, float exp)
-        : albedo(alb), diffuse_color(color), specular_exponent(exp) {}
+    Material() : refractive_index(1), albedo(1,0,0,0), diffuse_color(), specular_exponent() {}
+    Material(float r, const Vec4f& alb, const Vec3f& color, float exp)
+        : refractive_index(r), albedo(alb), diffuse_color(color), specular_exponent(exp) {}
 
-    Vec3f albedo;
+    float refractive_index;
+    Vec4f albedo;
     Vec3f diffuse_color;
     float specular_exponent;
 };
@@ -24,6 +25,22 @@ struct Light
 
 Vec3f reflect(const Vec3f& I, const Vec3f& N) {
     return I - N*2.f*(I*N);
+}
+
+Vec3f refract(const Vec3f& I, const Vec3f& N, float refractive_index) {
+    float cos = -std::max(-1.f, std::min(1.f, I*N));
+    float etai = 1;
+    float etat = refractive_index;
+    Vec3f n = N;
+    if (cos < 0) {
+        cos = -cos;
+        std::swap(etai, etat);
+        n = -N;
+    }
+
+    float eta = etai/etat;
+    float k = 1 - eta*eta*(1 - cos*cos);
+    return k < 0 ? Vec3f(0,0,0) : I*eta + n * (eta * cos - sqrt(k));
 }
 
 struct Sphere

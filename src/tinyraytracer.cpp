@@ -17,7 +17,19 @@ Vec3f& hit, Vec3f& N, Material& material) {
             material = sph[i].material;
         }
     }
-    return spheres_dist < 1000;
+    float checkerboard_dist = std::numeric_limits<float>::max();
+    if (fabs(dir.y)>1e-3)  {
+        float d = -(orig.y+4)/dir.y; // the checkerboard plane has equation y = -4
+        Vec3f pt = orig + dir*d;
+        if (d>0 && fabs(pt.x)<10 && pt.z<-10 && pt.z>-30 && d<spheres_dist) {
+            checkerboard_dist = d;
+            hit = pt;
+            N = Vec3f(0,1,0);
+            material.diffuse_color = (int(.5*hit.x+1000) + int(.5*hit.z)) & 1 ? Vec3f(1,1,1) : Vec3f(1, .7, .3);
+            material.diffuse_color = material.diffuse_color*.3;
+        }
+    }
+    return std::min(spheres_dist, checkerboard_dist)<1000;
 }
 
 
@@ -30,8 +42,11 @@ Vec3f cast_ray(const Vec3f& orig, const Vec3f& dir, const std::vector<Sphere>& s
     }
 
     Vec3f reflect_dir = reflect(dir, N).normalize();
+    Vec3f refract_dir = refract(dir, N, material.refractive_index).normalize();
     Vec3f reflect_orig = reflect_dir*N < 0 ? point - N*1e-3 : point + N*1e-3;
+    Vec3f refract_orig = refract_dir*N < 0 ? point - N*1e-3 : point + N*1e-3;
     Vec3f reflect_color = cast_ray(reflect_orig, reflect_dir, sph, lights, depth + 1);
+    Vec3f refract_color = cast_ray(refract_orig, refract_dir, sph, lights, depth + 1);
 
     float diffuse_light_intensity = 0;
     float specular_light_intensity = 0;
@@ -49,7 +64,7 @@ Vec3f cast_ray(const Vec3f& orig, const Vec3f& dir, const std::vector<Sphere>& s
         diffuse_light_intensity += lights[i].intensity * std::max(0.f, light_dir*N);
         specular_light_intensity += pow(std::max(0.f, -reflect(-light_dir, N)*dir), material.specular_exponent)*lights[i].intensity;
     }
-    return material.diffuse_color * diffuse_light_intensity * material.albedo[0] + Vec3f(1., 1., 1.)*specular_light_intensity * material.albedo[1] + reflect_color*material.albedo[2];
+    return material.diffuse_color * diffuse_light_intensity * material.albedo[0] + Vec3f(1., 1., 1.)*specular_light_intensity * material.albedo[1] + reflect_color*material.albedo[2] + refract_color*material.albedo[3];
 }
 
 
@@ -86,13 +101,14 @@ void render(const std::vector<Sphere>& sph, const std::vector<Light>& lights) {
 
 int main()
 {
-    Material ivory(Vec3f(0.6, 0.3, 0.1), Vec3f(0.4, 0.4, 0.3), 50);
-    Material red_rubber(Vec3f(0.9, 0.1, 0.0), Vec3f(0.3, 0.1, 0.1), 10);
-    Material mirror(Vec3f(0.0, 10.0, 0.8), Vec3f(1.0, 1.0, 1.0), 1425);
+    Material ivory(1.0, Vec4f(0.6, 0.3, 0.1, 0.0), Vec3f(0.4, 0.4, 0.3), 50);
+    Material red_rubber(1.0, Vec4f(0.9, 0.1, 0.0, 0.0), Vec3f(0.3, 0.1, 0.1), 10);
+    Material mirror(1.0, Vec4f(0.0, 10.0, 0.8, 0.0), Vec3f(1.0, 1.0, 1.0), 1425);
+    Material glass(1.5, Vec4f(0.0, 0.5, 0.1, 0.8), Vec3f(0.6, 0.7, 0.8), 125);
 
     std::vector<Sphere> spheres;
     spheres.push_back(Sphere(Vec3f(-3,    0,   -16), 2,      ivory));
-    spheres.push_back(Sphere(Vec3f(-1.0, -1.5, -12), 2, mirror));
+    spheres.push_back(Sphere(Vec3f(-1.0, -1.5, -12), 2, glass));
     spheres.push_back(Sphere(Vec3f( 1.5, -0.5, -18), 3, red_rubber));
     spheres.push_back(Sphere(Vec3f( 7,    5,   -18), 4,      mirror));
 
