@@ -3,13 +3,21 @@
 
 #include "vec.hpp"
 
+struct Material
+{
+    Material() {}
+    Material(const Vec3f& color) : diffuse_color(color) {}
+
+    Vec3f diffuse_color;
+};
+
 struct Sphere
 {
-    Sphere() : center(0, 0, 0), radius(0) {}
-    Sphere(const Vec3f& c, float r) : center(c), radius(r) {}
+    Sphere(const Vec3f& c, float r, const Material& m) : center(c), radius(r), material(m) {}
 
     Vec3f center;
     float radius;
+    Material material;
 };
 
 bool HitSphere(const Sphere& sph, const Vec3f& orig, const Vec3f& dir, float& t0) {
