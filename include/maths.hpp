@@ -11,6 +11,14 @@ struct Material
     Vec3f diffuse_color;
 };
 
+struct Light 
+{
+    Light(const Vec3f& pos, float inten) : position(pos), intensity(inten) {}
+
+    Vec3f position;
+    float intensity;
+};
+
 struct Sphere
 {
     Sphere(const Vec3f& c, float r, const Material& m) : center(c), radius(r), material(m) {}

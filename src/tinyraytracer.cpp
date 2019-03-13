@@ -2,7 +2,7 @@
 #include <fstream>
 #include <limits>
 #include <vector>
-#include "sphere.hpp"
+#include "maths.hpp"
 #include "vec.hpp"
 
 bool scene_intersect(const Vec3f& orig, const Vec3f& dir, const std::vector<Sphere>& sph,
@@ -21,18 +21,24 @@ Vec3f& hit, Vec3f& N, Material& material) {
 }
 
 
-Vec3f cast_ray(const Vec3f& orig, const Vec3f& dir, const std::vector<Sphere>& sph) {
+Vec3f cast_ray(const Vec3f& orig, const Vec3f& dir, const std::vector<Sphere>& sph, const std::vector<Light>& lights) {
     Vec3f point, N;
     Material material;
 
     if (!scene_intersect(orig, dir, sph, point, N, material)) {
         return {0.2, 0.7, 0.8};
     }
-    return material.diffuse_color;
+
+    float diffuse_light_intensity = 0;
+    for (size_t i = 0; i < lights.size(); ++i) {
+        Vec3f light_dir = (lights[i].position - point).normalize();
+        diffuse_light_intensity += lights[i].intensity * std::max(0.f, light_dir*N);
+    }
+    return material.diffuse_color * diffuse_light_intensity;
 }
 
 
-void render(const std::vector<Sphere>& sph) {
+void render(const std::vector<Sphere>& sph, const std::vector<Light>& lights) {
     constexpr int width = 1024;
     constexpr int height = 768;
     constexpr float fov = M_PI / 3;
@@ -44,7 +50,7 @@ void render(const std::vector<Sphere>& sph) {
             float x = (2*(i + 0.5)/float(width) - 1) * tan(fov/2.)*width/float(height);
             float y = -(2*(j + 0.5)/float(height) - 1) * tan(fov/2.);
             Vec3f dir = Vec3f(x, y, -1).normalize();
-            framebuffer[i+j*width] = cast_ray(Vec3f(0, 0, 0), dir, sph);
+            framebuffer[i+j*width] = cast_ray(Vec3f(0, 0, 0), dir, sph, lights);
         }
     }
 
@@ -70,5 +76,9 @@ int main()
     spheres.push_back(Sphere(Vec3f(-1.0, -1.5, -12), 2, red_rubber));
     spheres.push_back(Sphere(Vec3f( 1.5, -0.5, -18), 3, red_rubber));
     spheres.push_back(Sphere(Vec3f( 7,    5,   -18), 4,      ivory));
-    render(spheres);
+
+    std::vector<Light> lights;
+    lights.push_back(Light(Vec3f(-20, 20, 10), 3));
+
+    render(spheres, lights);
 }
