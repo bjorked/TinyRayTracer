@@ -5,10 +5,13 @@
 
 struct Material
 {
-    Material() {}
-    Material(const Vec3f& color) : diffuse_color(color) {}
+    Material() : albedo(1,0), diffuse_color(), specular_exponent() {}
+    Material(const Vec2f& alb, const Vec3f& color, float exp)
+        : albedo(alb), diffuse_color(color), specular_exponent(exp) {}
 
+    Vec2f albedo;
     Vec3f diffuse_color;
+    float specular_exponent;
 };
 
 struct Light 
@@ -18,6 +21,10 @@ struct Light
     Vec3f position;
     float intensity;
 };
+
+Vec3f reflect(const Vec3f& I, const Vec3f& N) {
+    return I - N*2.f*(I*N);
+}
 
 struct Sphere
 {
